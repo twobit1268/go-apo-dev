@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: autoparts
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=auto-parts-local
+    ports:
+      - "8085:8085"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ../gcp/cloud-run/api.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pubsub-emulator:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/autoparts?sslmode=disable
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      GCP_PROJECT_ID: auto-parts-local
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    profiles: ["full"]
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: ../gcp/cloud-run/api.Dockerfile
+      args:
+        BUILD_TARGET: ./cmd/worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      pubsub-emulator:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/autoparts?sslmode=disable
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      GCP_PROJECT_ID: auto-parts-local
+    profiles: ["full"]
+
+  web:
+    build:
+      context: .
+      dockerfile: gcp/cloud-run/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    profiles: ["full"]

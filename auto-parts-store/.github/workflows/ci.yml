@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: auto-parts-store/backend/go.sum
+      - name: backend unit tests
+        working-directory: auto-parts-store/backend
+        run: go test ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: auto-parts-store/web/package-lock.json
+      - name: frontend unit tests
+        working-directory: auto-parts-store/web
+        run: |
+          npm install
+          npm test -- --run
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autoparts
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: auto-parts-store/backend/go.sum
+      - name: start pubsub emulator
+        run: |
+          docker run -d --name pubsub-emulator -p 8085:8085 \
+            gcr.io/google.com/cloudsdktool/cloud-sdk:emulators \
+            gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=auto-parts-local
+      - name: run migrations
+        working-directory: auto-parts-store/backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoparts?sslmode=disable
+        run: go run ./cmd/migrate up
+      - name: integration tests
+        working-directory: auto-parts-store/backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoparts?sslmode=disable
+          PUBSUB_EMULATOR_HOST: localhost:8085
+          GCP_PROJECT_ID: auto-parts-local
+        run: go test -tags=integration ./...
+
+  api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autoparts
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: auto-parts-store/backend/go.sum
+      - name: start pubsub emulator
+        run: |
+          docker run -d --name pubsub-emulator -p 8085:8085 \
+            gcr.io/google.com/cloudsdktool/cloud-sdk:emulators \
+            gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=auto-parts-local
+      - name: run migrations
+        working-directory: auto-parts-store/backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoparts?sslmode=disable
+        run: go run ./cmd/migrate up
+      - name: api tests
+        working-directory: auto-parts-store/backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoparts?sslmode=disable
+          PUBSUB_EMULATOR_HOST: localhost:8085
+          GCP_PROJECT_ID: auto-parts-local
+        run: go test -tags=api ./tests/...
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: bring up full stack
+        working-directory: auto-parts-store
+        run: docker compose --profile full up -d --build
+      - name: wait for services
+        run: npx wait-on http://localhost:8080/healthz http://localhost:5173
+      - name: run migrations
+        working-directory: auto-parts-store/backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoparts?sslmode=disable
+        run: go run ./cmd/migrate up
+      - name: e2e tests
+        working-directory: auto-parts-store/e2e
+        env:
+          WEB_BASE_URL: http://localhost:5173
+        run: go test -tags=e2e ./...
+      - name: tear down
+        if: always()
+        working-directory: auto-parts-store
+        run: docker compose --profile full down -v
