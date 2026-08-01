@@ -1,4 +1,4 @@
-.PHONY: dev dev-down migrate-up migrate-down \
+.PHONY: dev dev-all dev-down migrate-up migrate-down \
         test-unit test-integration test-api test-e2e test-all \
         wait-for-postgres build-web
 
@@ -17,6 +17,9 @@ dev:
 	@echo "  (cd backend && DATABASE_URL='$(DATABASE_URL)' PUBSUB_EMULATOR_HOST=$(PUBSUB_EMULATOR_HOST) GCP_PROJECT_ID=$(GCP_PROJECT_ID) go run ./cmd/api)"
 	@echo "  (cd backend && DATABASE_URL='$(DATABASE_URL)' PUBSUB_EMULATOR_HOST=$(PUBSUB_EMULATOR_HOST) GCP_PROJECT_ID=$(GCP_PROJECT_ID) go run ./cmd/worker)"
 	@echo "  (cd web && npm run dev)"
+
+dev-all:
+	./scripts/dev.sh
 
 dev-down:
 	docker compose down -v

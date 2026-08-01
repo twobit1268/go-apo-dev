@@ -19,3 +19,6 @@ npm-debug.log*
 # Env files
 .env
 .env.local
+
+# Dev wrapper script logs
+.dev-logs/

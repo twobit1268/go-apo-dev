@@ -38,24 +38,36 @@ docker-compose.yml
 Makefile
 ```
 
-## 2. Start the local infrastructure
+## 2. Start everything
+
+The fast path is one command:
 
 ```sh
-make dev
+make dev-all
 ```
 
-This starts Postgres and the Pub/Sub emulator in Docker and runs the SQL
-migrations (schema + seed data: a few sample parts/categories) against
-Postgres. It prints the commands you need for step 3 - leave it running.
+This runs `scripts/dev.sh`, which starts Postgres + the Pub/Sub emulator in
+Docker, runs migrations, `npm install`s the web app on first run, then
+starts the API, worker, and web dev server together. Logs for each go to
+`.dev-logs/{api,worker,web}.log`. Ctrl+C stops the API/worker/web - the
+docker-compose infra is left running (so the next `make dev-all` is fast);
+stop it with `make dev-down` when you're done for the day.
 
 First run will pull `gcr.io/google.com/cloudsdktool/cloud-sdk:emulators`,
 which is a large image. If the pull seems to hang for a long time, that's
 usually Docker Desktop's registry proxy being slow, not a broken image -
 give it a few minutes before assuming something's wrong.
 
-## 3. Run the API, worker, and web app
+### Running the pieces separately
 
-In three separate terminals, from `auto-parts-store/`:
+If you'd rather see each process's output live in its own terminal (e.g.
+while debugging one of them), skip `dev-all` and run the steps by hand:
+
+```sh
+make dev   # just the docker infra + migrations
+```
+
+Then in three separate terminals, from `auto-parts-store/`:
 
 ```sh
 # terminal 1 - REST API on :8080
@@ -73,7 +85,7 @@ from the environment, defaulting to the docker-compose values from step 2
 (see `backend/internal/config/config.go`). You shouldn't need to set
 anything by hand for local dev.
 
-## 4. Verify it's working
+## 3. Verify it's working
 
 Open http://localhost:5173. You should see a catalog of seeded auto parts
 (brake pads, filters, a battery). Walk through the golden path:
