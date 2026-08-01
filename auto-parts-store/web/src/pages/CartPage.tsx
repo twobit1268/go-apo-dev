@@ -24,7 +24,7 @@ export function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div>
-        <h1>Your Cart</h1>
+        <h1 className="page-title">Your Cart</h1>
         <p data-testid="empty-cart-message">Your cart is empty.</p>
         <Link to="/">Continue shopping</Link>
       </div>
@@ -38,16 +38,19 @@ export function CartPage() {
 
   return (
     <div>
-      <h1>Your Cart</h1>
+      <h1 className="page-title">Your Cart</h1>
       <ul className="cart-items" data-testid="cart-items">
         {cart.items.map((item) => {
           const part = parts[item.partId];
           return (
             <li key={item.partId} data-testid={`cart-item-${item.partId}`}>
-              <span>{part ? part.name : item.partId}</span>
-              <span>Qty: {item.quantity}</span>
-              <span>{part ? formatCents(part.priceCents * item.quantity) : ""}</span>
+              <span className="cart-item-name">{part ? part.name : item.partId}</span>
+              <span className="cart-item-qty">Qty: {item.quantity}</span>
+              <span className="cart-item-price">
+                {part ? formatCents(part.priceCents * item.quantity) : ""}
+              </span>
               <button
+                className="btn-secondary"
                 data-testid={`remove-item-${item.partId}`}
                 onClick={() => removeItem(item.partId)}
                 disabled={loading}
@@ -61,7 +64,7 @@ export function CartPage() {
       <p className="cart-total" data-testid="cart-total">
         Total: {formatCents(totalCents)}
       </p>
-      <button data-testid="checkout-btn" onClick={() => navigate("/checkout")}>
+      <button className="btn-large" data-testid="checkout-btn" onClick={() => navigate("/checkout")}>
         Proceed to Checkout
       </button>
     </div>

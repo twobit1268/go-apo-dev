@@ -22,18 +22,31 @@ export function OrderConfirmationPage() {
 
   return (
     <div data-testid="order-confirmation">
-      <h1>Order Confirmed</h1>
-      <p data-testid="order-id">Order #{order.id}</p>
-      <p data-testid="order-status">Status: {order.status}</p>
-      <p data-testid="order-total">Total: {formatCents(order.totalCents)}</p>
-      <ul>
-        {order.items.map((item) => (
-          <li key={item.partId}>
-            {item.quantity} × {item.partId} @ {formatCents(item.unitPriceCents)}
-          </li>
-        ))}
-      </ul>
-      <Link to="/">Continue shopping</Link>
+      <div className="order-summary">
+        <div className="order-summary-header">
+          <span className="order-check" aria-hidden="true">
+            ✓
+          </span>
+          <h1>Order Confirmed</h1>
+        </div>
+        <p data-testid="order-id">Order #{order.id}</p>
+        <p data-testid="order-status">
+          Status: <span className="status-badge">{order.status}</span>
+        </p>
+        <p className="order-total" data-testid="order-total">
+          Total: {formatCents(order.totalCents)}
+        </p>
+        <ul className="order-items">
+          {order.items.map((item) => (
+            <li key={item.partId}>
+              {item.quantity} × {item.partId} @ {formatCents(item.unitPriceCents)}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p style={{ marginTop: "1.25rem" }}>
+        <Link to="/">Continue shopping</Link>
+      </p>
     </div>
   );
 }

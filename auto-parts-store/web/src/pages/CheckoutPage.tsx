@@ -36,10 +36,15 @@ export function CheckoutPage() {
 
   return (
     <div>
-      <h1>Checkout</h1>
+      <h1 className="page-title">Checkout</h1>
       <p>{cart?.items.length ?? 0} item(s) in your cart.</p>
       {error && <p role="alert">{error}</p>}
-      <button data-testid="place-order-btn" onClick={handlePlaceOrder} disabled={submitting}>
+      <button
+        className="btn-large"
+        data-testid="place-order-btn"
+        onClick={handlePlaceOrder}
+        disabled={submitting}
+      >
         {submitting ? "Placing order…" : "Place Order"}
       </button>
     </div>

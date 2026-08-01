@@ -27,13 +27,17 @@ export function PartDetailPage() {
   return (
     <div data-testid="part-detail">
       <Link to="/">&larr; Back to catalog</Link>
-      <h1 data-testid="part-detail-name">{part.name}</h1>
+      <h1 className="page-title" data-testid="part-detail-name">
+        {part.name}
+      </h1>
       <p className="part-sku">SKU: {part.sku}</p>
       <p>{part.description}</p>
       <p className="part-price" data-testid="part-detail-price">
         {formatCents(part.priceCents)}
       </p>
-      <p>{part.stockQty > 0 ? `${part.stockQty} in stock` : "Out of stock"}</p>
+      <p className={`part-stock ${part.stockQty > 0 ? "in-stock" : "out-of-stock"}`}>
+        {part.stockQty > 0 ? `${part.stockQty} in stock` : "Out of stock"}
+      </p>
 
       <div className="part-detail-actions">
         <input
@@ -53,7 +57,12 @@ export function PartDetailPage() {
         >
           Add to Cart
         </button>
-        {added && <span data-testid="part-detail-added-confirmation"> Added!</span>}
+        {added && (
+          <span className="added-confirmation" data-testid="part-detail-added-confirmation">
+            {" "}
+            Added!
+          </span>
+        )}
       </div>
     </div>
   );

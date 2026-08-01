@@ -18,7 +18,7 @@ export function PartCard({ part }: { part: Part }) {
       </Link>
       <p className="part-sku">SKU: {part.sku}</p>
       <p className="part-price">{formatCents(part.priceCents)}</p>
-      <p className="part-stock">
+      <p className={`part-stock ${part.stockQty > 0 ? "in-stock" : "out-of-stock"}`}>
         {part.stockQty > 0 ? `${part.stockQty} in stock` : "Out of stock"}
       </p>
       <div className="part-card-actions">

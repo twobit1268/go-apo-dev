@@ -27,7 +27,7 @@ export function CatalogPage() {
 
   return (
     <div>
-      <h1>Shop Parts</h1>
+      <h1 className="page-title">Shop Parts</h1>
       <form
         className="catalog-filters"
         data-testid="search-form"
