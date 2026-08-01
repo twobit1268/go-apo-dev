@@ -29,55 +29,25 @@ auto-parts-store/
 
 Scope: catalog browsing/search, cart, checkout, order history. No auth (a
 bare `customerId` is used), no real payment processor, no admin/inventory
-UI - see the plan doc for the full list of assumptions.
+UI.
 
-## Local development
+## Docs
 
-```sh
-make dev        # starts Postgres + Pub/Sub emulator, runs migrations
-cd backend && go run ./cmd/api      # in one terminal
-cd backend && go run ./cmd/worker   # in another
-cd web && npm install && npm run dev
-```
+- **[docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)** - clone to
+  running app, step by step, plus troubleshooting.
+- **[docs/TESTING.md](./docs/TESTING.md)** - how to run and debug each of
+  the four test layers.
+- **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - deploying to a real GCP
+  project, step by step.
 
-The API listens on `:8080`, the web dev server on `:5173`.
-
-## Testing
-
-Four layers, each runnable on its own or all together:
-
-| Layer | Command | What it needs |
-|---|---|---|
-| Unit | `make test-unit` | Nothing - pure Go/Vitest against in-memory fakes |
-| Integration | `make test-integration` | Docker (Postgres + Pub/Sub emulator) |
-| API | `make test-api` | Docker (Postgres + Pub/Sub emulator) |
-| E2E (UI) | `make test-e2e` | Docker (full stack: Postgres, Pub/Sub emulator, API, worker, web) |
-| Everything | `make test-all` | |
-
-- **Unit** (`backend/internal/**/*_test.go`, `web/src/**/*.test.tsx`): table-driven
-  tests against hand-written fakes (`backend/internal/testutil`) and mocked
-  API clients - no network, no Docker.
-- **Integration** (`-tags=integration`): repository tests against a real
-  Postgres, plus a Pub/Sub round-trip test (publish `OrderPlaced` on the
-  real emulator, assert the inventory subscriber actually decremented
-  stock).
-- **API** (`-tags=api`, `backend/tests/api`): black-box HTTP tests against
-  the real router + real Postgres + real Pub/Sub emulator via
-  `httptest.Server`.
-- **E2E** (`-tags=e2e`, `e2e/`, using `playwright-go` - same pattern as this
-  repo's `playwright-example/`): drives a real Chromium against the full
-  docker-compose stack - browse, search/filter, add to cart, checkout,
-  confirm the order.
-
-## Deploying to GCP
+## Quick reference
 
 ```sh
-export GCP_PROJECT_ID=... GCP_REGION=... CLOUDSQL_CONNECTION_NAME=... DATABASE_URL=...
-./gcp/deploy.sh
+make dev             # start Postgres + Pub/Sub emulator, run migrations
+make test-unit        # fast, no Docker
+make test-integration # real Postgres + Pub/Sub emulator
+make test-api         # real router + Postgres + Pub/Sub emulator, black-box HTTP
+make test-e2e          # full docker-compose stack + Playwright-go
+make test-all
+./gcp/deploy.sh        # deploy to Cloud Run (see docs/DEPLOYMENT.md first)
 ```
-
-Builds and pushes the `api`, `worker`, and `web` images to Artifact
-Registry, provisions the Pub/Sub topic/subscriptions, and deploys three
-Cloud Run services. Assumes a Cloud SQL Postgres instance already exists
-and migrations have been applied (`make migrate-up` against its
-`DATABASE_URL`).
